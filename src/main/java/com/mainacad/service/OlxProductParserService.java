@@ -78,7 +78,6 @@ public class OlxProductParserService extends Thread {
         return result;
     }
 
-
     private String extractImageUrl(Element productInfo) {
         String result = "";
         try {
