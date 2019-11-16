@@ -2,8 +2,6 @@ package com.mainacad;
 
 import com.mainacad.model.Item;
 import com.mainacad.service.OlxNavigationParserService;
-import com.mainacad.service.OlxProductParserService;
-import org.jsoup.nodes.Document;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -15,13 +13,16 @@ public class App {
     private static final String BASE_URL = "https://www.olx.ua/";
 
     public static void main(String[] args) {
-
         if (args.length == 0) {
             LOG.warning("You didnot input any keyword!");
             return;
         }
 
+        List<Thread> threads = new ArrayList<>();
         List<Item> items = Collections.synchronizedList(new ArrayList<>());
+
+        LOG.info("Parser started!!!");
+
         try {
             String keyword = URLEncoder.encode(args[0], "UTF-8");
             for (int i = 1; i < args.length; i++) {
@@ -29,31 +30,34 @@ public class App {
             }
             String url = BASE_URL + "/uk/list/q-" + keyword;
 
-            // test without threads!!!!!
-            OlxNavigationParserService olxNavigationParserService = new OlxNavigationParserService(items, url);
-            olxNavigationParserService.navigate();
+            OlxNavigationParserService olxNavigationParserService = new OlxNavigationParserService(items, url, threads);
+            threads.add(olxNavigationParserService);
+            olxNavigationParserService.run();
         } catch (
                 UnsupportedEncodingException e) {
             e.printStackTrace();
         }
 
+        boolean threadsFinished;
+        do {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            threadsFinished = checkThreads(threads);
+        } while (threadsFinished);
 
-//        // Test some product
-        String url = "https://www.olx.ua/uk/obyavlenie/zimny-kombenzon-dlya-hoopchikv-vd-0-3-ms-IDG6fqC.html?sd=1#c9b599c6d1;promoted";
-        Document document = null;
-        OlxProductParserService olxProductParserService = new OlxProductParserService(items, url);
-        olxProductParserService.start();
+        LOG.info("Parser finished!!! " + items.size() + " were extracted!");
+    }
 
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    private static boolean checkThreads(List<Thread> threads) {
+        for (Thread thread : threads) {
+            if (thread.isAlive() || thread.getState().equals(Thread.State.NEW)) {
+                return true;
+            }
         }
-
-        if (!items.isEmpty()) {
-            LOG.info("\n" + items.get(0).toString());
-        }
-
+        return false;
     }
 }
 

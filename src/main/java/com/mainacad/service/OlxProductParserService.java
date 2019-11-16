@@ -26,7 +26,6 @@ public class OlxProductParserService extends Thread {
     public void run() {
         try {
             Document document = Jsoup.connect(url).get();
-//            Element productInfo = document.getElementsByClass("offer-titlebox").first();
             String itemId = extractItemId(document);
             String name = extractName(document);
             BigDecimal price = extractPrice(document);
@@ -88,6 +87,5 @@ public class OlxProductParserService extends Thread {
         }
         return result;
     }
-
 
 }

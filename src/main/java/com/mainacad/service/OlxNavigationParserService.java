@@ -11,18 +11,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-public class OlxNavigationParserService {
+public class OlxNavigationParserService extends Thread {
     private static final Logger LOG = Logger.getLogger(OlxNavigationParserService.class.getName());
 
     private final List<Item> items;
+    private final List<Thread> threads;
     private final String url;
 
-    public OlxNavigationParserService(List<Item> items, String url) {
+    public OlxNavigationParserService(List<Item> items, String url, List<Thread> threads) {
         this.items = items;
         this.url = url;
+        this.threads = threads;
     }
 
-    public void navigate() {
+    @Override
+    public void run() {
         // product links extraction
         Document document = null;
         try {
@@ -35,7 +38,7 @@ public class OlxNavigationParserService {
 
             int counter = 0;
             for (int i = 1; i < rows.size(); i++) {
-                if (counter > 3) {
+                if (counter > 1) {
                     break;
                 }
                 Element element = table.getElementsByClass("wrap").get(i);
@@ -43,20 +46,20 @@ public class OlxNavigationParserService {
                 itemlinks.add(cols);
                 counter++;
             }
-            System.out.println("itemlinks from one page = " + itemlinks);
+            LOG.info("itemlinks from one page = " + itemlinks);
 
-            // If we want to get information about product
-//            int counter = 0;
-//            for (String link : itemlinks) {
-//                if (counter > 1) {
-//                    break;
-//                }
-//                if (link != null) {
-//                    OlxProductParserService olxProductParserService = new OlxProductParserService(items, link);
-//                    olxProductParserService.start();
-//                    counter++;
-//                }
-//            }
+            counter = 0;
+            for (String link : itemlinks) {
+                if (counter > 1) {
+                    break;
+                }
+                if (link != null) {
+                    OlxProductParserService olxProductParserService = new OlxProductParserService(items, link);
+                    threads.add(olxProductParserService);
+                    olxProductParserService.start();
+                    counter++;
+                }
+            }
         } catch (Exception e) {
             LOG.severe("Products were not extracted by URL " + url);
         }
@@ -67,11 +70,11 @@ public class OlxNavigationParserService {
                 Element lastPageElement = document.getElementsByClass("item fleft").last();
                 if (lastPageElement != null) {
                     Integer lastPage = Integer.valueOf(lastPageElement.getElementsByTag("SPAN").last().text());
-
                     for (int i = 2; i <= lastPage; i++) {
                         String nextPageUrl = url + "?page=" + i;
-                        OlxNavigationParserService olxNavigationParserService = new OlxNavigationParserService(items, nextPageUrl);
-                        olxNavigationParserService.navigate();
+                        OlxNavigationParserService olxNavigationParserService = new OlxNavigationParserService(items, nextPageUrl, threads);
+                        threads.add(olxNavigationParserService);
+                        olxNavigationParserService.start();
                     }
                 }
             }
