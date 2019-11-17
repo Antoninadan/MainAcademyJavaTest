@@ -26,45 +26,47 @@ public class OlxNavigationParserService extends Thread {
 
     @Override
     public void run() {
-        // product links extraction
         Document document = null;
         try {
             document = Jsoup.connect(url).get();
-            Element productGallery = document.getElementsByClass("fixed offers breakword redesigned").first();
-            Element table = productGallery.select("table").get(0);
-            Elements rows = table.getElementsByClass("wrap");
+            productLinksExtraction(document);
+            pagination(document);
 
-            Set<String> itemlinks = new HashSet<>();
-
-            int counter = 0;
-            for (int i = 1; i < rows.size(); i++) {
-                if (counter > 1) {
-                    break;
-                }
-                Element element = table.getElementsByClass("wrap").get(i);
-                String cols = element.select("td").get(1).getElementsByTag("A").attr("href");
-                itemlinks.add(cols);
-                counter++;
-            }
-            LOG.info("itemlinks from one page = " + itemlinks);
-
-            counter = 0;
-            for (String link : itemlinks) {
-                if (counter > 1) {
-                    break;
-                }
-                if (link != null) {
-                    OlxProductParserService olxProductParserService = new OlxProductParserService(items, link);
-                    threads.add(olxProductParserService);
-                    olxProductParserService.start();
-                    counter++;
-                }
-            }
         } catch (Exception e) {
             LOG.severe("Products were not extracted by URL " + url);
         }
+    }
 
-        // pagination
+    public void productLinksExtraction(Document document){
+        Element productGallery = document.getElementsByClass("fixed offers breakword redesigned").first();
+        Element table = productGallery.select("table").get(0);
+        Elements rows = table.getElementsByClass("wrap");
+
+        Set<String> itemlinks = new HashSet<>();
+
+        int counter = 0;
+        for (int i = 1; i < rows.size(); i++) {
+            if (counter > 1) {
+                break;
+            }
+            Element element = table.getElementsByClass("wrap").get(i);
+            String cols = element.select("td").get(1).getElementsByTag("A").attr("href");
+            itemlinks.add(cols);
+            counter++;
+        }
+        LOG.info("itemlinks from one page = " + itemlinks);
+
+        for (String link : itemlinks) {
+            if (link != null) {
+                OlxProductParserService olxProductParserService = new OlxProductParserService(items, link);
+                threads.add(olxProductParserService);
+                olxProductParserService.start();
+                counter++;
+            }
+        }
+    }
+
+    public void pagination(Document document){
         try {
             if (!url.contains("page=")) {
                 Element lastPageElement = document.getElementsByClass("item fleft").last();
