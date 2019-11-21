@@ -5,12 +5,14 @@ import com.mainacad.service.OlxNavigationParserService;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class App {
     private static final Logger LOG = Logger.getLogger(App.class.getName());
-    private static final String BASE_URL = "https://www.olx.ua/";
+    private static final String BASE_URL = "https://www.olx.ua";
 
     public static void main(String[] args) {
         if (args.length == 0) {
